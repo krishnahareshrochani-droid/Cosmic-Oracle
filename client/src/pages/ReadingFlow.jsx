@@ -34,6 +34,7 @@ export default function ReadingFlow() {
     dob: profile.dob || '',
     tob: profile.tob || '',
     place: profile.place || 'Pune',
+    mobile: '',
     question: '',
     partnerName: '',
     partnerDob: '',
@@ -50,6 +51,7 @@ export default function ReadingFlow() {
   const showBirth = needs.includes('dob');
   const showTime = needs.includes('tob');
   const showPlace = needs.includes('place');
+  const showMobile = needs.includes('mobile');
   const questionRequired = needs.includes('question');
   const numbers = useMemo(() => quickNumbers(form.dob, form.gender), [form.dob, form.gender]);
 
@@ -75,6 +77,7 @@ export default function ReadingFlow() {
       place: showPlace ? form.place : undefined,
       question: form.question.trim() || undefined
     };
+    if (showMobile) p.mobile = form.mobile.replace(/\D/g, '');
     if (type.needsPartner) {
       p.partner = {
         name: form.partnerName.trim() || 'Partner',
@@ -91,6 +94,7 @@ export default function ReadingFlow() {
     if (!form.name.trim()) return 'Please tell the Oracle your name.';
     if (showBirth && !/^\d{4}-\d{2}-\d{2}$/.test(form.dob)) return 'Please enter a valid date of birth.';
     if (questionRequired && !form.question.trim()) return 'This reading needs your specific question.';
+    if (showMobile && !/^\d{10}$/.test(form.mobile.replace(/\D/g, ''))) return 'Please enter a 10-digit mobile number.';
     if (type.needsPartner && !/^\d{4}-\d{2}-\d{2}$/.test(form.partnerDob)) return 'Please add the second person’s date of birth.';
     return null;
   };
@@ -191,6 +195,14 @@ export default function ReadingFlow() {
                   {placeOptions.map((c) => <option key={c} value={c} />)}
                 </datalist>
                 <span className="hint">Coordinates and time zone come from this city. If it is not listed, pick the nearest larger city.</span>
+              </div>
+            )}
+
+            {showMobile && (
+              <div className="field full">
+                <label htmlFor="mobile">Mobile number *</label>
+                <input id="mobile" value={form.mobile} onChange={(e) => update({ mobile: e.target.value })} placeholder="10-digit number" inputMode="numeric" maxLength={13} />
+                <span className="hint">Used only for this reading — nothing is sent to it.</span>
               </div>
             )}
 

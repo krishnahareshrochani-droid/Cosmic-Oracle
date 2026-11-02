@@ -13,7 +13,42 @@ const REQUIRED_LABELS = {
   mobile: 'mobile number'
 };
 
+const DOB_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+function checkDate(value, label, { optional = false } = {}) {
+  if (!value) return optional ? null : `${label} is required.`;
+  if (!DOB_RE.test(value)) return `${label} must look like YYYY-MM-DD.`;
+  const time = Date.parse(`${value}T00:00:00Z`);
+  if (Number.isNaN(time)) return `${label} is not a real date.`;
+  const year = Number(value.slice(0, 4));
+  if (year < 1900) return `${label} must be after 1900 — the ephemeris is not reliable before that.`;
+  if (time > Date.now()) return `${label} cannot be in the future.`;
+  return null;
+}
+
 export function validateInputs(type, profile) {
+  if (type.reading !== 'prashna') {
+    const dobProblem = checkDate(profile?.dob, 'Date of birth');
+    if (dobProblem) {
+      const err = new Error(dobProblem);
+      err.status = 422;
+      throw err;
+    }
+    if (type.needsPartner) {
+      const partnerProblem = checkDate(profile?.partner?.dob, 'The second date of birth');
+      if (partnerProblem) {
+        const err = new Error(partnerProblem);
+        err.status = 422;
+        throw err;
+      }
+    }
+  }
+  if (type.reading === 'mobile' && profile?.mobile && !/^\d{10}$/.test(String(profile.mobile).replace(/\D/g, ''))) {
+    const err = new Error('Please enter a 10-digit mobile number without the country code.');
+    err.status = 422;
+    throw err;
+  }
+
   const missing = (type.requires || []).filter((field) => {
     if (field === 'tob' && type.engine === 'numerology') return false;
     return !profile?.[field];
